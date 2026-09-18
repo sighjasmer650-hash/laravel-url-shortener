@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\InvitationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,6 +36,11 @@ Route::middleware('auth')->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
+    Route::get(
+        '/invitations/{id}/accept',
+        [InvitationController::class, 'accept']
+    )->name('invitations.accept');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -55,7 +61,27 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:SuperAdmin')->group(function () {
 
         Route::resource('companies', CompanyController::class);
+    });
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Invitation Routes
+    | SuperAdmin + Admin
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:SuperAdmin,Admin')->group(function () {
+
+        Route::resource('invitations', InvitationController::class)
+            ->only([
+                'index',
+                'create',
+                'store',
+                'edit',
+                'update',
+                'destroy',
+            ]);
     });
 
 
@@ -70,7 +96,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin', function () {
             return 'Admin Area';
         })->name('admin.dashboard');
-
     });
 
 
@@ -85,7 +110,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/member', function () {
             return 'Member Area';
         })->name('member.dashboard');
-
     });
 
 
@@ -100,7 +124,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/sales', function () {
             return 'Sales Area';
         })->name('sales.dashboard');
-
     });
 
 
@@ -115,7 +138,5 @@ Route::middleware('auth')->group(function () {
         Route::get('/manager', function () {
             return 'Manager Area';
         })->name('manager.dashboard');
-
     });
-
 });

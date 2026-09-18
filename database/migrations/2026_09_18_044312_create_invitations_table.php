@@ -23,7 +23,7 @@ return new class extends Migration
             $table->foreignId('invited_by')
                 ->constrained('users')
                 ->cascadeOnDelete();
-
+            $table->string('status')->default('pending');
             // Email of invited user
             $table->string('email');
 
