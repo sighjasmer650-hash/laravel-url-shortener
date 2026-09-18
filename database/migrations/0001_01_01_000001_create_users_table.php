@@ -22,13 +22,13 @@ return new class extends Migration
             $table->string('password');
 
             // User role
-            $table->enum('role', [
-                'SuperAdmin',
-                'Admin',
-                'Member',
-                'Sales',
-                'Manager'
-            ])->default('Member');
+            // $table->enum('role', [
+            //     'SuperAdmin',
+            //     'Admin',
+            //     'Member',
+            //     'Sales',
+            //     'Manager'
+            // ])->default('Member');
 
             $table->rememberToken();
 

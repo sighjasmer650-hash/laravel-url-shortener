@@ -19,24 +19,23 @@ class InvitationController extends Controller
 
     private function allowedRoles($user): array
     {
-        return match ($user->role) {
-
-            // SuperAdmin can invite all allowed roles
-            'SuperAdmin' => [
+        if ($user->hasRole('SuperAdmin')) {
+            return [
                 'Admin',
                 'Member',
                 'Sales',
                 'Manager',
-            ],
+            ];
+        }
 
-            // Admin cannot invite Admin or Member
-            'Admin' => [
+        if ($user->hasRole('Admin')) {
+            return [
                 'Sales',
                 'Manager',
-            ],
+            ];
+        }
 
-            default => [],
-        };
+        return [];
     }
 
 
@@ -50,20 +49,43 @@ class InvitationController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->role === 'SuperAdmin') {
+        /*
+        |--------------------------------------------------------------------------
+        | SuperAdmin
+        |--------------------------------------------------------------------------
+        */
 
-            // SuperAdmin can see all invitations
+        if ($user->hasRole('SuperAdmin')) {
+
             $invitations = Invitation::with('company')
                 ->latest()
                 ->paginate(10);
-        } elseif ($user->role === 'Admin') {
+        }
 
-            // Admin can see only own company invitations
+        /*
+        |--------------------------------------------------------------------------
+        | Admin
+        |--------------------------------------------------------------------------
+        */ elseif ($user->hasRole('Admin')) {
+
+            if (!$user->company_id) {
+                abort(
+                    403,
+                    'Admin is not assigned to any company.'
+                );
+            }
+
             $invitations = Invitation::with('company')
                 ->where('company_id', $user->company_id)
                 ->latest()
                 ->paginate(10);
-        } else {
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Other Roles
+        |--------------------------------------------------------------------------
+        */ else {
 
             abort(
                 403,
@@ -88,14 +110,12 @@ class InvitationController extends Controller
     {
         $user = auth()->user();
 
-        if (!in_array($user->role, ['SuperAdmin', 'Admin'])) {
-
+        if (!$user->hasAnyRole(['SuperAdmin', 'Admin'])) {
             abort(
                 403,
                 'You are not authorized to create invitations.'
             );
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -103,15 +123,14 @@ class InvitationController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        if ($user->role === 'SuperAdmin') {
+        if ($user->hasRole('SuperAdmin')) {
 
-            // SuperAdmin can select any existing company
+            // SuperAdmin can select any company
             $companies = Company::orderBy('name')->get();
         } else {
 
             // Admin must have a company
             if (!$user->company_id) {
-
                 abort(
                     403,
                     'Admin is not assigned to any company.'
@@ -125,7 +144,6 @@ class InvitationController extends Controller
             )->get();
         }
 
-
         /*
         |--------------------------------------------------------------------------
         | Dynamic Roles
@@ -133,7 +151,6 @@ class InvitationController extends Controller
         */
 
         $roles = $this->allowedRoles($user);
-
 
         return view(
             'invitations.create',
@@ -155,36 +172,32 @@ class InvitationController extends Controller
     {
         $user = auth()->user();
 
-
         /*
-    |--------------------------------------------------------------------------
-    | Check Role Access
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | Permission
+        |--------------------------------------------------------------------------
+        */
 
-        if (!in_array($user->role, ['SuperAdmin', 'Admin'])) {
-
+        if (!$user->hasAnyRole(['SuperAdmin', 'Admin'])) {
             abort(
                 403,
                 'You are not authorized to send invitations.'
             );
         }
 
-
         /*
-    |--------------------------------------------------------------------------
-    | Dynamic Allowed Roles
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | Allowed Roles
+        |--------------------------------------------------------------------------
+        */
 
         $allowedRoles = $this->allowedRoles($user);
 
-
         /*
-    |--------------------------------------------------------------------------
-    | Validation
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | Validation
+        |--------------------------------------------------------------------------
+        */
 
         $validated = $request->validate([
 
@@ -207,14 +220,13 @@ class InvitationController extends Controller
 
         ]);
 
-
         /*
-    |--------------------------------------------------------------------------
-    | Admin Company Protection
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | Admin Company Protection
+        |--------------------------------------------------------------------------
+        */
 
-        if ($user->role === 'Admin') {
+        if ($user->hasRole('Admin')) {
 
             if (
                 (int) $validated['company_id']
@@ -226,20 +238,19 @@ class InvitationController extends Controller
                     ->withInput()
                     ->withErrors([
                         'company_id' =>
-                        'You can only invite users to your own company.'
+                        'You can only invite users to your own company.',
                     ]);
             }
         }
 
-
         /*
-    |--------------------------------------------------------------------------
-    | SuperAdmin Admin Invitation Protection
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | SuperAdmin Admin Invitation Protection
+        |--------------------------------------------------------------------------
+        */
 
         if (
-            $user->role === 'SuperAdmin'
+            $user->hasRole('SuperAdmin')
             &&
             $validated['role'] === 'Admin'
         ) {
@@ -248,10 +259,11 @@ class InvitationController extends Controller
                 $validated['company_id']
             );
 
-
             /*
-        | Company must already have a user
-        */
+            |--------------------------------------------------------------------------
+            | Company must already have a user
+            |--------------------------------------------------------------------------
+            */
 
             if (!$company->users()->exists()) {
 
@@ -259,17 +271,16 @@ class InvitationController extends Controller
                     ->withInput()
                     ->withErrors([
                         'company_id' =>
-                        'SuperAdmin cannot invite an Admin to a new company.'
+                        'SuperAdmin cannot invite an Admin to a new company.',
                     ]);
             }
         }
 
-
         /*
-    |--------------------------------------------------------------------------
-    | Existing Pending Invitation
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | Existing Pending Invitation
+        |--------------------------------------------------------------------------
+        */
 
         $existingInvitation = Invitation::where(
             'email',
@@ -285,7 +296,6 @@ class InvitationController extends Controller
             )
             ->first();
 
-
         if ($existingInvitation) {
 
             return back()
@@ -296,12 +306,11 @@ class InvitationController extends Controller
                 ]);
         }
 
-
         /*
-    |--------------------------------------------------------------------------
-    | Create Invitation
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | Create Invitation
+        |--------------------------------------------------------------------------
+        */
 
         $invitation = Invitation::create([
 
@@ -311,8 +320,6 @@ class InvitationController extends Controller
 
             'email' => $validated['email'],
 
-            'role' => $validated['role'],
-
             'token' => Str::random(64),
 
             'status' => 'pending',
@@ -321,8 +328,16 @@ class InvitationController extends Controller
 
         ]);
 
-        Mail::to($invitation->email)->send(new InvitationMail($invitation));
+        /*
+        |--------------------------------------------------------------------------
+        | Send Email
+        |--------------------------------------------------------------------------
+        */
 
+        Mail::to($invitation->email)
+            ->send(
+                new InvitationMail($invitation)
+            );
 
         return redirect()
             ->route('invitations.index')
@@ -343,20 +358,19 @@ class InvitationController extends Controller
     {
         $user = auth()->user();
 
-
         /*
         |--------------------------------------------------------------------------
         | Permission
         |--------------------------------------------------------------------------
         */
 
-        if ($user->role === 'SuperAdmin') {
+        if ($user->hasRole('SuperAdmin')) {
 
             // SuperAdmin can edit any invitation
-
-        } elseif ($user->role === 'Admin') {
+        } elseif ($user->hasRole('Admin')) {
 
             // Admin can edit only own company invitation
+
             if (
                 (int) $invitation->company_id
                 !==
@@ -376,14 +390,13 @@ class InvitationController extends Controller
             );
         }
 
-
         /*
         |--------------------------------------------------------------------------
         | Companies
         |--------------------------------------------------------------------------
         */
 
-        if ($user->role === 'SuperAdmin') {
+        if ($user->hasRole('SuperAdmin')) {
 
             $companies = Company::orderBy('name')->get();
         } else {
@@ -394,7 +407,6 @@ class InvitationController extends Controller
             )->get();
         }
 
-
         /*
         |--------------------------------------------------------------------------
         | Dynamic Roles
@@ -402,7 +414,6 @@ class InvitationController extends Controller
         */
 
         $roles = $this->allowedRoles($user);
-
 
         return view(
             'invitations.edit',
@@ -425,22 +436,22 @@ class InvitationController extends Controller
         Request $request,
         Invitation $invitation
     ) {
+
         $user = auth()->user();
 
-
         /*
-    |--------------------------------------------------------------------------
-    | Permission
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | Permission
+        |--------------------------------------------------------------------------
+        */
 
-        if ($user->role === 'SuperAdmin') {
+        if ($user->hasRole('SuperAdmin')) {
 
             // SuperAdmin can update any invitation
-
-        } elseif ($user->role === 'Admin') {
+        } elseif ($user->hasRole('Admin')) {
 
             // Admin can update only own company invitation
+
             if (
                 (int) $invitation->company_id
                 !==
@@ -450,7 +461,7 @@ class InvitationController extends Controller
                 return back()
                     ->withErrors([
                         'error' =>
-                        'You are not authorized to update this invitation.'
+                        'You are not authorized to update this invitation.',
                     ]);
             }
         } else {
@@ -458,25 +469,23 @@ class InvitationController extends Controller
             return back()
                 ->withErrors([
                     'error' =>
-                    'You are not authorized to update invitations.'
+                    'You are not authorized to update invitations.',
                 ]);
         }
 
-
         /*
-    |--------------------------------------------------------------------------
-    | Dynamic Allowed Roles
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | Allowed Roles
+        |--------------------------------------------------------------------------
+        */
 
         $allowedRoles = $this->allowedRoles($user);
 
-
         /*
-    |--------------------------------------------------------------------------
-    | Validation
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | Validation
+        |--------------------------------------------------------------------------
+        */
 
         $validated = $request->validate([
 
@@ -504,14 +513,13 @@ class InvitationController extends Controller
 
         ]);
 
-
         /*
-    |--------------------------------------------------------------------------
-    | Admin Company Protection
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | Admin Company Protection
+        |--------------------------------------------------------------------------
+        */
 
-        if ($user->role === 'Admin') {
+        if ($user->hasRole('Admin')) {
 
             if (
                 (int) $validated['company_id']
@@ -523,20 +531,19 @@ class InvitationController extends Controller
                     ->withInput()
                     ->withErrors([
                         'company_id' =>
-                        'You can only use your own company.'
+                        'You can only use your own company.',
                     ]);
             }
         }
 
-
         /*
-    |--------------------------------------------------------------------------
-    | SuperAdmin Admin Invitation Protection
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | SuperAdmin Admin Invitation Protection
+        |--------------------------------------------------------------------------
+        */
 
         if (
-            $user->role === 'SuperAdmin'
+            $user->hasRole('SuperAdmin')
             &&
             $validated['role'] === 'Admin'
         ) {
@@ -545,28 +552,22 @@ class InvitationController extends Controller
                 $validated['company_id']
             );
 
-
-            /*
-        | Company must already have a user
-        */
-
             if (!$company->users()->exists()) {
 
                 return back()
                     ->withInput()
                     ->withErrors([
                         'company_id' =>
-                        'SuperAdmin cannot invite an Admin to a new company.'
+                        'SuperAdmin cannot invite an Admin to a new company.',
                     ]);
             }
         }
 
-
         /*
-    |--------------------------------------------------------------------------
-    | Update Invitation
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | Update Invitation
+        |--------------------------------------------------------------------------
+        */
 
         $invitation->update([
 
@@ -580,13 +581,6 @@ class InvitationController extends Controller
 
         ]);
 
-
-        /*
-    |--------------------------------------------------------------------------
-    | Success
-    |--------------------------------------------------------------------------
-    */
-
         return redirect()
             ->route('invitations.index')
             ->with(
@@ -594,6 +588,8 @@ class InvitationController extends Controller
                 'Invitation updated successfully.'
             );
     }
+
+
     /*
     |--------------------------------------------------------------------------
     | Destroy
@@ -604,24 +600,22 @@ class InvitationController extends Controller
     {
         $user = auth()->user();
 
-
         /*
         |--------------------------------------------------------------------------
         | SuperAdmin
         |--------------------------------------------------------------------------
         */
 
-        if ($user->role === 'SuperAdmin') {
+        if ($user->hasRole('SuperAdmin')) {
 
             $invitation->delete();
         }
-
 
         /*
         |--------------------------------------------------------------------------
         | Admin
         |--------------------------------------------------------------------------
-        */ elseif ($user->role === 'Admin') {
+        */ elseif ($user->hasRole('Admin')) {
 
             if (
                 (int) $invitation->company_id
@@ -638,7 +632,6 @@ class InvitationController extends Controller
             $invitation->delete();
         }
 
-
         /*
         |--------------------------------------------------------------------------
         | Other Roles
@@ -651,7 +644,6 @@ class InvitationController extends Controller
             );
         }
 
-
         return redirect()
             ->route('invitations.index')
             ->with(
@@ -661,39 +653,98 @@ class InvitationController extends Controller
     }
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Accept Invitation
+    |--------------------------------------------------------------------------
+    */
 
-    public function accept($id)
+    public function accept($token)
     {
-        $invitation = Invitation::find($id);
+        /*
+        |--------------------------------------------------------------------------
+        | Find Invitation
+        |--------------------------------------------------------------------------
+        */
+
+        $invitation = Invitation::where(
+            'token',
+            $token
+        )->first();
 
         if (!$invitation) {
+
             return redirect()
                 ->route('dashboard')
-                ->with('error', 'Invitation not found.');
+                ->with(
+                    'error',
+                    'Invalid invitation token.'
+                );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Logged In User
+        |--------------------------------------------------------------------------
+        */
 
         $user = auth()->user();
 
         if (!$user) {
+
             return redirect()
                 ->route('login')
-                ->with('error', 'Please login first.');
+                ->with(
+                    'error',
+                    'Please login first.'
+                );
         }
 
-        // Only invited user can accept
-        if (strtolower($invitation->email) !== strtolower($user->email)) {
-            abort(403, 'You are not authorized to accept this invitation.');
+        /*
+        |--------------------------------------------------------------------------
+        | Email Protection
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            strtolower($invitation->email)
+            !==
+            strtolower($user->email)
+        ) {
+
+            abort(
+                403,
+                'You are not authorized to accept this invitation.'
+            );
         }
 
-        // Already accepted
+        /*
+        |--------------------------------------------------------------------------
+        | Already Accepted
+        |--------------------------------------------------------------------------
+        */
+
         if ($invitation->status === 'accepted') {
+
             return redirect()
                 ->route('dashboard')
-                ->with('error', 'This invitation has already been accepted.');
+                ->with(
+                    'error',
+                    'This invitation has already been accepted.'
+                );
         }
 
-        // Check expiry
-        if ($invitation->expires_at && $invitation->expires_at->isPast()) {
+        /*
+        |--------------------------------------------------------------------------
+        | Expiry Check
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $invitation->expires_at
+            &&
+            $invitation->expires_at->isPast()
+        ) {
 
             $invitation->update([
                 'status' => 'expired',
@@ -701,14 +752,42 @@ class InvitationController extends Controller
 
             return redirect()
                 ->route('dashboard')
-                ->with('error', 'This invitation has expired.');
+                ->with(
+                    'error',
+                    'This invitation has expired.'
+                );
         }
 
-        // Accept invitation
+        /*
+        |--------------------------------------------------------------------------
+        | Accept Invitation
+        |--------------------------------------------------------------------------
+        */
+
         $user->update([
             'company_id' => $invitation->company_id,
-            'role' => $invitation->role,
         ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Spatie Role Assignment
+        |--------------------------------------------------------------------------
+        |
+        | Old:
+        | $user->update(['role' => $invitation->role]);
+        |
+        | New:
+        | Spatie manages the role through model_has_roles.
+        |
+        */
+
+        $user->assignRole($invitation->role);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update Invitation Status
+        |--------------------------------------------------------------------------
+        */
 
         $invitation->update([
             'status' => 'accepted',
@@ -717,6 +796,9 @@ class InvitationController extends Controller
 
         return redirect()
             ->route('dashboard')
-            ->with('success', 'Invitation accepted successfully.');
+            ->with(
+                'success',
+                'Invitation accepted successfully.'
+            );
     }
 }

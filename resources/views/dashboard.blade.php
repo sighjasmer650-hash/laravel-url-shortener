@@ -6,7 +6,22 @@
 
 @section('content')
 
-    <!-- Welcome -->
+    {{-- Success Message --}}
+    @if(session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    {{-- Error Message --}}
+    @if(session('error'))
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
+    @endif
+
+
+    {{-- Welcome Section --}}
     <div class="welcome-section">
 
         <div class="welcome-content">
@@ -26,10 +41,11 @@
     </div>
 
 
-    <!-- Dashboard Cards -->
+    {{-- Dashboard Cards --}}
     <div class="dashboard-cards">
 
-        <!-- Role -->
+
+        {{-- Role --}}
         <div class="dashboard-card">
 
             <div class="card-top">
@@ -45,7 +61,9 @@
             </div>
 
             <div class="card-value">
-                {{ auth()->user()->role }}
+
+                {{ auth()->user()->getRoleNames()->implode(', ') }}
+
             </div>
 
             <div class="card-description">
@@ -55,7 +73,7 @@
         </div>
 
 
-        <!-- Email -->
+        {{-- Email --}}
         <div class="dashboard-card">
 
             <div class="card-top">
@@ -71,7 +89,9 @@
             </div>
 
             <div class="card-value email">
+
                 {{ auth()->user()->email }}
+
             </div>
 
             <div class="card-description">
@@ -81,7 +101,7 @@
         </div>
 
 
-        <!-- Company -->
+        {{-- Company --}}
         <div class="dashboard-card">
 
             <div class="card-top">
@@ -97,7 +117,9 @@
             </div>
 
             <div class="card-value">
+
                 {{ auth()->user()->company?->name ?? 'N/A' }}
+
             </div>
 
             <div class="card-description">
@@ -107,7 +129,7 @@
         </div>
 
 
-        <!-- Status -->
+        {{-- Status --}}
         <div class="dashboard-card">
 
             <div class="card-top">
@@ -134,7 +156,5 @@
 
     </div>
 
-
-   
-
 @endsection
+

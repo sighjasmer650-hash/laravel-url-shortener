@@ -12,8 +12,14 @@
     </title>
 
     <link rel="stylesheet" href="{{ asset('css/layouts.css') }}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
+    </script>
 
     @yield('css')
 
@@ -23,8 +29,7 @@
 
     <div class="app-wrapper">
 
-        <!-- Sidebar -->
-
+        {{-- Sidebar --}}
         <aside class="sidebar">
 
             <div class="logo">
@@ -33,88 +38,97 @@
 
             <nav class="sidebar-menu">
 
-                {{-- Dashboard: All logged-in users --}}
-                <a href="{{ route('dashboard') }}"
+                {{-- Dashboard --}}
+                <a
+                    href="{{ route('dashboard') }}"
                     class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     Dashboard
                 </a>
 
 
-                {{-- Companies: SuperAdmin only --}}
-                @if(auth()->user()->role === 'SuperAdmin')
-
-                <a href="{{ route('companies.index') }}"
+                {{-- Companies --}}
+                @role('SuperAdmin')
+                <a
+                    href="{{ route('companies.index') }}"
                     class="{{ request()->routeIs('companies.*') ? 'active' : '' }}">
                     Companies
                 </a>
+                @endrole
 
-                @endif
 
-
-                {{-- Users: SuperAdmin only --}}
-                @if(auth()->user()->role === 'SuperAdmin')
-
-                <a href="#"
+                {{-- Users --}}
+                @role('SuperAdmin')
+                <a
+                    href="{{ route('users.index') }}"
                     class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
                     Users
                 </a>
+                @endrole
 
-                @endif
 
-
-                {{-- Invitations: SuperAdmin + Admin --}}
-                @if(in_array(auth()->user()->role, ['SuperAdmin', 'Admin']))
-
-                <a href="{{ route('invitations.index') }}"
+                {{-- Invitations --}}
+                @hasanyrole('SuperAdmin|Admin')
+                <a
+                    href="{{ route('invitations.index') }}"
                     class="{{ request()->routeIs('invitations.*') ? 'active' : '' }}">
                     Invitations
                 </a>
-
-                @endif
+                @endhasanyrole
 
 
                 {{-- Short URLs --}}
-                @if(in_array(auth()->user()->role, ['Admin', 'Member']))
-
-                <a href="#"
+                @hasanyrole('Admin|Member|Sales|Manager')
+                <a
+                    href="{{ route('short-urls.index') }}"
                     class="{{ request()->routeIs('short-urls.*') ? 'active' : '' }}">
                     Short URLs
                 </a>
-
-                @endif
+                @endhasanyrole
 
             </nav>
 
         </aside>
 
 
-        <!-- Main Area -->
-
+        {{-- Main Wrapper --}}
         <div class="main-wrapper">
 
-            <!-- Header -->
-
+            {{-- Header --}}
             <header class="top-header">
 
                 <div>
-                    <h3>@yield('page-title', 'Dashboard')</h3>
+                    <h3>
+                        @yield('page-title', 'Dashboard')
+                    </h3>
                 </div>
 
+
+                {{-- User Area --}}
                 <div class="user-area">
 
                     <span>
                         {{ auth()->user()->name }}
                     </span>
 
+
+                    {{-- Current Role --}}
                     <span class="role">
-                        {{ auth()->user()->role }}
+
+                        {{ auth()->user()->getRoleNames()->implode(', ') }}
+
                     </span>
 
-                    <form action="{{ route('logout') }}" method="POST">
+
+                    {{-- Logout --}}
+                    <form
+                        action="{{ route('logout') }}"
+                        method="POST">
 
                         @csrf
 
-                        <button type="submit" class="logout-btn">
+                        <button
+                            type="submit"
+                            class="logout-btn">
                             Logout
                         </button>
 
@@ -125,8 +139,7 @@
             </header>
 
 
-            <!-- Content -->
-
+            {{-- Content --}}
             <main class="content">
 
                 @yield('content')
@@ -139,4 +152,4 @@
 
 </body>
 
-</html>
+</html

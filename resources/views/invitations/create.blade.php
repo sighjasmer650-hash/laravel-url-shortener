@@ -1,11 +1,13 @@
 @extends('layouts.app')
 
 @section('title', 'Create Invitation')
+
 @section('page-title', 'Create Invitation')
 
 @section('content')
 
 <div class="container-fluid">
+
 
     {{-- Page Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -21,10 +23,8 @@
         </div>
 
         <a href="{{ route('invitations.index') }}"
-           class="btn btn-outline-secondary">
-
+            class="btn btn-outline-secondary">
             ← Back to Invitations
-
         </a>
 
     </div>
@@ -51,34 +51,33 @@
             {{-- Validation Errors --}}
             @if($errors->any())
 
-                <div class="alert alert-danger">
+            <div class="alert alert-danger">
 
-                    <strong>
-                        Please fix the following errors:
-                    </strong>
+                <strong>
+                    Please fix the following errors:
+                </strong>
 
-                    <ul class="mb-0 mt-2">
+                <ul class="mb-0 mt-2">
 
-                        @foreach($errors->all() as $error)
+                    @foreach($errors->all() as $error)
 
-                            <li>
-                                {{ $error }}
-                            </li>
+                    <li>
+                        {{ $error }}
+                    </li>
 
-                        @endforeach
+                    @endforeach
 
-                    </ul>
+                </ul>
 
-                </div>
+            </div>
 
             @endif
 
 
             <form action="{{ route('invitations.store') }}"
-                  method="POST">
+                method="POST">
 
                 @csrf
-
 
                 <div class="row">
 
@@ -89,7 +88,7 @@
                         <div class="mb-3">
 
                             <label for="email"
-                                   class="form-label fw-semibold">
+                                class="form-label fw-semibold">
 
                                 Email Address
 
@@ -101,19 +100,19 @@
 
 
                             <input type="email"
-                                   name="email"
-                                   id="email"
-                                   value="{{ old('email') }}"
-                                   class="form-control @error('email') is-invalid @enderror"
-                                   placeholder="Enter user's email address"
-                                   autofocus>
+                                name="email"
+                                id="email"
+                                value="{{ old('email') }}"
+                                class="form-control @error('email') is-invalid @enderror"
+                                placeholder="Enter user's email address"
+                                autofocus>
 
 
                             @error('email')
 
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
 
                             @enderror
 
@@ -133,7 +132,7 @@
                         <div class="mb-3">
 
                             <label for="company_id"
-                                   class="form-label fw-semibold">
+                                class="form-label fw-semibold">
 
                                 Company
 
@@ -144,63 +143,67 @@
                             </label>
 
 
-                            @if(auth()->user()->role === 'SuperAdmin')
+                            {{-- SuperAdmin --}}
+                            @if(auth()->user()->hasRole('SuperAdmin'))
 
-                                <select name="company_id"
-                                        id="company_id"
-                                        class="form-select @error('company_id') is-invalid @enderror">
+                            <select name="company_id"
+                                id="company_id"
+                                class="form-select @error('company_id') is-invalid @enderror">
 
-                                    <option value="">
-                                        Select Company
-                                    </option>
-
-                                    @foreach($companies as $company)
-
-                                        <option value="{{ $company->id }}"
-                                            {{ old('company_id') == $company->id ? 'selected' : '' }}>
-
-                                            {{ $company->name }}
-
-                                        </option>
-
-                                    @endforeach
-
-                                </select>
+                                <option value="">
+                                    Select Company
+                                </option>
 
 
-                            @else
+                                @foreach($companies as $company)
 
-                                @php
-                                    $adminCompany = $companies->first();
-                                @endphp
+                                <option value="{{ $company->id }}"
+                                    {{ old('company_id') == $company->id ? 'selected' : '' }}>
 
-                                <input type="hidden"
-                                       name="company_id"
-                                       value="{{ $adminCompany?->id }}">
+                                    {{ $company->name }}
+
+                                </option>
+
+                                @endforeach
+
+                            </select>
 
 
-                                <input type="text"
-                                       class="form-control"
-                                       value="{{ $adminCompany?->name }}"
-                                       readonly>
+                            {{-- Admin --}}
+                            @elseif(auth()->user()->hasRole('Admin'))
+
+                            @php
+                            $adminCompany = $companies->first();
+                            @endphp
+
+
+                            <input type="hidden"
+                                name="company_id"
+                                value="{{ $adminCompany?->id }}">
+
+
+                            <input type="text"
+                                class="form-control"
+                                value="{{ $adminCompany?->name }}"
+                                readonly>
 
                             @endif
 
 
                             @error('company_id')
 
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
 
                             @enderror
 
 
-                            @if(auth()->user()->role === 'Admin')
+                            @if(auth()->user()->hasRole('Admin'))
 
-                                <div class="form-text">
-                                    You can only invite users to your own company.
-                                </div>
+                            <div class="form-text">
+                                You can only invite users to your own company.
+                            </div>
 
                             @endif
 
@@ -215,7 +218,7 @@
                         <div class="mb-3">
 
                             <label for="role"
-                                   class="form-label fw-semibold">
+                                class="form-label fw-semibold">
 
                                 User Role
 
@@ -227,8 +230,8 @@
 
 
                             <select name="role"
-                                    id="role"
-                                    class="form-select @error('role') is-invalid @enderror">
+                                id="role"
+                                class="form-select @error('role') is-invalid @enderror">
 
                                 <option value="">
                                     Select Role
@@ -237,12 +240,12 @@
 
                                 @foreach($roles as $role)
 
-                                    <option value="{{ $role }}"
-                                        {{ old('role') === $role ? 'selected' : '' }}>
+                                <option value="{{ $role }}"
+                                    {{ old('role') === $role ? 'selected' : '' }}>
 
-                                        {{ $role }}
+                                    {{ $role }}
 
-                                    </option>
+                                </option>
 
                                 @endforeach
 
@@ -251,22 +254,22 @@
 
                             @error('role')
 
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
 
                             @enderror
 
 
                             <div class="form-text">
 
-                                @if(auth()->user()->role === 'SuperAdmin')
+                                @if(auth()->user()->hasRole('SuperAdmin'))
 
-                                    SuperAdmin can invite Admin, Member, Sales or Manager.
+                                SuperAdmin can invite Admin, Member, Sales or Manager.
 
-                                @elseif(auth()->user()->role === 'Admin')
+                                @elseif(auth()->user()->hasRole('Admin'))
 
-                                    Admin can invite Sales or Manager only.
+                                Admin can invite Sales or Manager only.
 
                                 @endif
 
@@ -298,10 +301,8 @@
                             </strong>
 
                             <p class="mb-0 mt-1">
-
                                 The invitation will remain pending until the
                                 invited user accepts it.
-
                             </p>
 
                         </div>
@@ -315,7 +316,7 @@
                 <div class="d-flex gap-2">
 
                     <button type="submit"
-                            class="btn btn-primary">
+                        class="btn btn-primary">
 
                         Send Invitation
 
@@ -323,7 +324,7 @@
 
 
                     <a href="{{ route('invitations.index') }}"
-                       class="btn btn-light border">
+                        class="btn btn-light border">
 
                         Cancel
 
@@ -336,6 +337,7 @@
         </div>
 
     </div>
+
 
 </div>
 

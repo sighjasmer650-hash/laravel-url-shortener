@@ -25,11 +25,12 @@ class RoleMiddleware
         // Logged-in user
         $user = auth()->user();
 
-        // User ka role allowed roles mein nahi hai
-        if (!in_array($user->role, $roles)) {
+        // Check if user has any of the allowed roles
+        if (!$user->hasAnyRole($roles)) {
             abort(403, 'You are not authorized to access this page.');
         }
 
         return $next($request);
     }
 }
+

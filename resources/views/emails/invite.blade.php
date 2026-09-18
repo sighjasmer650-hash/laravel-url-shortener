@@ -40,7 +40,7 @@
 
         <div style="margin:30px 0;">
 
-            <a href="{{ route('invitations.accept', $invitation->id) }}"
+            <a href="{{ route('invitations.accept', $invitation->token) }}"
                style="
                    background:#0d6efd;
                    color:white;

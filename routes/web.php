@@ -1,19 +1,30 @@
 <?php
 
-use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ShortUrlController;
+
+
+
+
+
+
 
 /*
 |--------------------------------------------------------------------------
-| Authentication Routes
+| Public Routes
 |--------------------------------------------------------------------------
 */
 
+// Login page
 Route::get('/login', [AuthController::class, 'showLogin'])
     ->name('login');
 
+// Login submit
 Route::post('/login', [AuthController::class, 'login'])
     ->name('login.submit');
 
@@ -36,10 +47,18 @@ Route::middleware('auth')->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
-    Route::get(
-        '/invitations/{id}/accept',
-        [InvitationController::class, 'accept']
-    )->name('invitations.accept');
+
+    Route::resource(
+        'short-urls',
+        ShortUrlController::class
+    )->only([
+        'index',
+        'create',
+        'store',
+        'edit',
+        'update',
+        'destroy',
+    ]);
 
 
     /*
@@ -54,24 +73,48 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Invitation Accept
+    |--------------------------------------------------------------------------
+    |
+    | User invitation token ke through accept karega.
+    |
+    */
+
+    Route::get(
+        '/invitations/accept/{token}',
+        [InvitationController::class, 'accept']
+    )->name('invitations.accept');
+
+
+    /*
+    |--------------------------------------------------------------------------
     | SuperAdmin Routes
     |--------------------------------------------------------------------------
+    |
+    | Sirf SuperAdmin:
+    | - Companies manage karega
+    | - Users manage karega
+    |
     */
 
     Route::middleware('role:SuperAdmin')->group(function () {
 
+        // Company CRUD
         Route::resource('companies', CompanyController::class);
+        Route::resource('users', UserController::class);
     });
 
 
     /*
     |--------------------------------------------------------------------------
     | Invitation Routes
-    | SuperAdmin + Admin
     |--------------------------------------------------------------------------
+    |
+    | SuperAdmin OR Admin invitation manage kar sakte hain.
+    |
     */
 
-    Route::middleware('role:SuperAdmin,Admin')->group(function () {
+    Route::middleware('role:SuperAdmin|Admin')->group(function () {
 
         Route::resource('invitations', InvitationController::class)
             ->only([
@@ -87,7 +130,7 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Admin Routes
+    | Admin Area
     |--------------------------------------------------------------------------
     */
 
@@ -101,7 +144,7 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Member Routes
+    | Member Area
     |--------------------------------------------------------------------------
     */
 
@@ -115,7 +158,7 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Sales Routes
+    | Sales Area
     |--------------------------------------------------------------------------
     */
 
@@ -129,14 +172,14 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Manager Routes
+    | Manager Area
     |--------------------------------------------------------------------------
     */
 
     Route::middleware('role:Manager')->group(function () {
 
         Route::get('/manager', function () {
-            return 'Manager Area';
+         
         })->name('manager.dashboard');
     });
 });
