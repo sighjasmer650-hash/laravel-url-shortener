@@ -12,6 +12,8 @@
     </title>
 
     <link rel="stylesheet" href="{{ asset('css/layouts.css') }}">
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 
     @yield('css')
 
@@ -36,19 +38,23 @@
                     Dashboard
                 </a>
 
-                <a href="#">
+                <a href="{{ route('companies.index') }}"
+                   class="{{ request()->routeIs('companies.*') ? 'active' : '' }}">
                     Companies
                 </a>
 
-                <a href="#">
+                <a href="#"
+                   class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
                     Users
                 </a>
 
-                <a href="#">
+                <a href="#"
+                   class="{{ request()->routeIs('invitations.*') ? 'active' : '' }}">
                     Invitations
                 </a>
 
-                <a href="#">
+                <a href="#"
+                   class="{{ request()->routeIs('short-urls.*') ? 'active' : '' }}">
                     Short URLs
                 </a>
 
